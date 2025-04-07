@@ -46,6 +46,9 @@ def callback():
     return 'OK'
 
 
+from linebot.v3.webhooks import MessageEvent, TextMessageContent
+from linebot.v3.messaging import TextMessage  # 別忘記加這行
+
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event):
     if event.message.text.strip() == "打卡":
@@ -54,10 +57,7 @@ def handle_text_message(event):
             line_bot_api.reply_message(
                 event.reply_token,
                 [
-                    {
-                        "type": "text",
-                        "text": "請傳送您目前的位置📍"
-                    }
+                    TextMessage(text="請傳送您目前的位置📍")
                 ]
             )
 
@@ -73,16 +73,12 @@ def handle_location_message(event):
     sheet.append_row([timestamp, user_id, address, latitude, longitude])
 
     with ApiClient(configuration) as api_client:
-        line_bot_api = MessagingApi(api_client)
-        line_bot_api.reply_message(
-            event.reply_token,
-            [
-                {
-                    "type": "text",
-                    "text": f"✅ 打卡完成！\n時間：{timestamp}\n地點：{address}"
-                }
-            ]
-        )
+       line_bot_api.reply_message(
+    event.reply_token,
+    [
+        TextMessage(text=f"✅ 打卡完成！\n時間：{timestamp}\n地點：{address}")
+    ]
+)
 
 if __name__ == "__main__":
     app.run(debug=True)
