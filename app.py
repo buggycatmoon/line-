@@ -30,7 +30,7 @@ handler = WebhookHandler(CHANNEL_SECRET)
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 credentials = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
 gs_client = gspread.authorize(credentials)
-sheet = gs_client.open("Line打卡紀錄表").sheet1
+sheet = gs_client.open_by_key("17Rb8Fa0qsfS0k0uOXJt1YnLKC-Gzeky1ClZnFbV3Wow").sheet1
 
 # Webhook 路由
 @app.route("/callback", methods=['POST'])
