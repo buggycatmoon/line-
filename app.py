@@ -112,12 +112,17 @@ def handle_location_message(event):
         # === 自動更新「統計表」結束 ===
 
         # 回覆訊息
-        line_bot_api.reply_message(
-            ReplyMessageRequest(
-                reply_token=event.reply_token,
-                messages=[TextMessage(text=f"✅ 打卡完成！\n{display_name}\n時間：{timestamp}\n地點：{address}")]
+        try:
+            print(f"Reply Token: {event.reply_token}")  # Print reply_token for debugging
+            line_bot_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[TextMessage(text=f"✅ 打卡完成！\n{display_name}\n時間：{timestamp}\n地點：{address}")]
+                )
             )
-        )
+            print("回覆訊息成功")
+        except Exception as e:
+            print("回覆訊息錯誤:", e)
 
 
 # 本地開發測試用
