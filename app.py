@@ -85,7 +85,7 @@ def handle_location_message(event):
     # 取得使用者名稱
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
-        profile: GetProfileResponse = line_bot_api.get_profile(user_id)
+        profile = line_bot_api.get_profile(user_id)
         display_name = profile.display_name
 
         # 寫入 Google Sheet 當月分頁
