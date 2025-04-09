@@ -13,7 +13,7 @@ from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import traceback
-from linebot.v3.messaging.models.get_profile_response import GetProfileResponse
+
 
 app = Flask(__name__)
 
