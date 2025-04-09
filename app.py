@@ -1,3 +1,4 @@
+import pytz
 from flask import Flask, request, abort
 from linebot.v3 import WebhookHandler
 from linebot.v3.messaging import (
@@ -69,7 +70,8 @@ def handle_location_message(event):
     address = event.message.address or "未提供"
     latitude = event.message.latitude
     longitude = event.message.longitude
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    tz = pytz.timezone('Asia/Taipei')  # 加上台灣時區
+    timestamp = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")  # 修正縮排
 
     # 寫入 Google Sheets
     sheet.append_row([timestamp, user_id, address, latitude, longitude])
