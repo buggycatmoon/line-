@@ -79,8 +79,8 @@ def handle_location_message(event):
     try:
         worksheet = gs_client.open("Line打卡記錄表").worksheet(month_sheet_name)
     except gspread.exceptions.WorksheetNotFound:
-        worksheet = gs_client.open("Line打卡記錄表").add_worksheet(title=month_sheet_name, rows="100", cols="5")
-        worksheet.append_row(["時間", "使用者名稱", "User ID", "地點", "經緯度"])
+        worksheet = gs_client.open("Line打卡記錄表").add_worksheet(title=month_sheet_name, rows="100", cols="6")
+        worksheet.append_row(["時間", "使用者名稱", "User ID", "地點", "緯度", "經度"])
 
     # 取得使用者名稱
     with ApiClient(configuration) as api_client:
