@@ -1,9 +1,8 @@
-from linebot.v3.messaging.models import FlexMessage, ReplyMessageRequest
 from flask import Flask, request, abort
 from linebot.v3 import WebhookHandler
 from linebot.v3.messaging import (
     Configuration, ApiClient, MessagingApi,
-    TextMessage
+    TextMessage, ReplyMessageRequest
 )
 from linebot.v3.webhooks import (
     MessageEvent, TextMessageContent, LocationMessageContent
@@ -30,12 +29,15 @@ handler = WebhookHandler(CHANNEL_SECRET)
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 credentials = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
 gs_client = gspread.authorize(credentials)
-sheet = gs_client.open("Line打卡紀錄表").sheet1
+sheet = gs_client.open("Line打卡記錄表").sheet1
 
+# Webhook 路由
 @app.route("/callback", methods=['POST'])
 def callback():
     signature = request.headers['X-Line-Signature']
     body = request.get_data(as_text=True)
+
+    # 🔍 印出 webhook 請求內容以便除錯
     print("📩 收到 webhook 請求：", body)
 
     try:
@@ -47,69 +49,20 @@ def callback():
 
     return 'OK'
 
+# 接收文字訊息
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event):
     if event.message.text.strip() == "打卡":
-        flex_message = FlexMessage(
-            alt_text="請點選下方按鈕進行打卡",
-            contents={
-                "type": "bubble",
-                "hero": {
-                    "type": "image",
-                    "url": "https://cdn.jsdelivr.net/gh/buggycatmoon/line-attendance-assets@main/icon-punch-purple.png",
-                    "size": "full",
-                    "aspectRatio": "1:1",
-                    "aspectMode": "cover"
-                },
-                "body": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "contents": [
-                        {
-                            "type": "text",
-                            "text": "歡迎打卡！",
-                            "weight": "bold",
-                            "size": "xl",
-                            "margin": "md"
-                        },
-                        {
-                            "type": "text",
-                            "text": "請點選下方按鈕並傳送您目前的位置📍",
-                            "size": "sm",
-                            "color": "#666666",
-                            "wrap": True,
-                            "margin": "md"
-                        }
-                    ]
-                },
-                "footer": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "spacing": "sm",
-                    "contents": [
-                        {
-                            "type": "button",
-                            "style": "primary",
-                            "color": "#A991D4",
-                            "action": {
-                                "type": "message",
-                                "label": "立即打卡",
-                                "text": "打卡"
-                            }
-                        }
-                    ]
-                }
-            }
-        )
         with ApiClient(configuration) as api_client:
             line_bot_api = MessagingApi(api_client)
             line_bot_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[flex_message]
+                    messages=[TextMessage(text="請傳送您目前的位置📍")]
                 )
             )
 
+# 接收位置訊息
 @handler.add(MessageEvent, message=LocationMessageContent)
 def handle_location_message(event):
     user_id = event.source.user_id
@@ -118,6 +71,7 @@ def handle_location_message(event):
     longitude = event.message.longitude
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    # 寫入 Google Sheets
     sheet.append_row([timestamp, user_id, address, latitude, longitude])
 
     with ApiClient(configuration) as api_client:
@@ -129,5 +83,6 @@ def handle_location_message(event):
             )
         )
 
+# 本地開發測試用
 if __name__ == "__main__":
     app.run(debug=True)
