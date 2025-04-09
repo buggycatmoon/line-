@@ -3,3 +3,4 @@ line-bot-sdk==3.*
 gspread
 oauth2client
 gunicorn
+pytz
