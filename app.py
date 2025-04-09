@@ -96,6 +96,34 @@ def handle_location_message(event):
             address,
             f"{latitude}, {longitude}"
         ])
+        # === 自動更新「統計表」開始 ===
+
+import pandas as pd
+
+# 重新讀取整個當月分頁資料（用來統計）
+records = worksheet.get_all_values()
+if records:
+    df = pd.DataFrame(records[1:], columns=records[0])  # 跳過第一列標題
+
+    # 統計每個使用者的打卡次數
+    summary = df.groupby(["使用者名稱", "User ID"]).size().reset_index(name="打卡次數")
+
+    # 嘗試開啟「統計表」，如果沒有就新建
+    try:
+        summary_sheet = gs_client.open("Line打卡記錄表").worksheet("統計表")
+        summary_sheet.clear()  # 清空舊資料
+    except gspread.exceptions.WorksheetNotFound:
+        summary_sheet = gs_client.open("Line打卡記錄表").add_worksheet(title="統計表", rows="100", cols="3")
+
+    # 寫入表頭
+    summary_sheet.append_row(["使用者名稱", "User ID", "打卡次數"])
+
+    # 寫入每一列統計資料
+    for _, row in summary.iterrows():
+        summary_sheet.append_row(row.tolist())
+
+# === 自動更新「統計表」結束 ===
+
 
         # 回覆訊息
         line_bot_api.reply_message(
