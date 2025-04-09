@@ -13,6 +13,7 @@ from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import traceback
+from linebot.v3.messaging.models.get_profile_response import GetProfileResponse
 
 app = Flask(__name__)
 
@@ -70,21 +71,39 @@ def handle_location_message(event):
     address = event.message.address or "未提供"
     latitude = event.message.latitude
     longitude = event.message.longitude
-    tz = pytz.timezone('Asia/Taipei')  # 加上台灣時區
-    timestamp = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")  # 修正縮排
+    tz = pytz.timezone('Asia/Taipei')
+    timestamp = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
-    # 寫入 Google Sheets
-    sheet.append_row([timestamp, user_id, address, latitude, longitude])
+    # 動態命名工作表（例如：2025-04）
+    month_sheet_name = datetime.now(tz).strftime("%Y-%m")
+    try:
+        worksheet = gs_client.open("Line打卡記錄表").worksheet(month_sheet_name)
+    except gspread.exceptions.WorksheetNotFound:
+        worksheet = gs_client.open("Line打卡記錄表").add_worksheet(title=month_sheet_name, rows="100", cols="5")
+        worksheet.append_row(["時間", "使用者名稱", "User ID", "地點", "經緯度"])
 
+    # 取得使用者名稱
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
+        profile: GetProfileResponse = line_bot_api.get_profile(user_id)
+        display_name = profile.display_name
+
+        # 寫入 Google Sheet 當月分頁
+        worksheet.append_row([
+            timestamp,
+            display_name,
+            user_id,
+            address,
+            f"{latitude}, {longitude}"
+        ])
+
+        # 回覆訊息
         line_bot_api.reply_message(
             ReplyMessageRequest(
                 reply_token=event.reply_token,
-                messages=[TextMessage(text=f"✅ 打卡完成！\n時間：{timestamp}\n地點：{address}")]
+                messages=[TextMessage(text=f"✅ 打卡完成！\n{display_name}\n時間：{timestamp}\n地點：{address}")]
             )
         )
-
 # 本地開發測試用
 if __name__ == "__main__":
     app.run(debug=True)
