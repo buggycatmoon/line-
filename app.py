@@ -1,4 +1,3 @@
-你說：
 import pytz
 from flask import Flask, request, abort
 from linebot.v3 import WebhookHandler
