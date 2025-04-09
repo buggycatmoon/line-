@@ -14,7 +14,6 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import traceback
 
-
 app = Flask(__name__)
 
 # 載入環境變數
@@ -85,7 +84,7 @@ def handle_location_message(event):
     # 取得使用者名稱
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
-        profile: GetProfileResponse = line_bot_api.get_profile(user_id)
+        profile = line_bot_api.get_profile(user_id)
         display_name = profile.display_name
 
         # 寫入 Google Sheet 當月分頁
@@ -104,6 +103,26 @@ def handle_location_message(event):
                 messages=[TextMessage(text=f"✅ 打卡完成！\n{display_name}\n時間：{timestamp}\n地點：{address}")]
             )
         )
+
+        # ✅ 產生統計表
+        records = worksheet.get_all_records()
+        count_dict = {}
+
+        for row in records:
+            name = row.get("使用者名稱", "未知")
+            count_dict[name] = count_dict.get(name, 0) + 1
+
+        stats_sheet_name = f"{month_sheet_name}-統計"
+        try:
+            stats_sheet = gs_client.open("Line打卡記錄表").worksheet(stats_sheet_name)
+            stats_sheet.clear()
+        except gspread.exceptions.WorksheetNotFound:
+            stats_sheet = gs_client.open("Line打卡記錄表").add_worksheet(title=stats_sheet_name, rows="100", cols="2")
+
+        stats_sheet.append_row(["使用者名稱", "打卡次數"])
+        for name, count in count_dict.items():
+            stats_sheet.append_row([name, count])
+
 # 本地開發測試用
 if __name__ == "__main__":
     app.run(debug=True)
